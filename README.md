@@ -32,6 +32,18 @@ props = readDoc.properties
 greeting = props["greeting"]
 ```
 
+Here is how to launch the sensor Pythoin code snippet :
+
+```bash
+./build.sh –edition EE
+ 
+cd sensor
+ 
+export PYTHONPATH=..
+ 
+python3 src/Main.py URL_WEBSOCKET_CAPELLA_APP_SERVICES username password
+```
+
 ## Disclaimer
 
 > This library is **NOT SUPPORTED BY COUCHBASE**. Even if you are a Couchbase customer, our otherwise awesome support team cannot help you with using this library.
