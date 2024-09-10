@@ -711,7 +711,11 @@ void CBLAuth_Free(CBLAuthenticator*);
 
 
 /** Direction of replication: push, pull, or both. */
-typedef uint8_t CBLReplicatorType;
+typedef enum {
+    kCBLReplicatorTypePushAndPull = 0,
+    kCBLReplicatorTypePush = 1,
+    kCBLReplicatorTypePull = 2
+} CBLReplicatorType;
 
 
 /** Flags describing a replicated document. */

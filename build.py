@@ -29,7 +29,8 @@ from cffi import FFI    # `pip3 install cffi` to install this
 # TODO: Make the stuff below work with Windows
 
 DEFAULT_INCLUDE_DIR  = "/usr/local/include"
-DEFAULT_LIBRARY_PATH = "/usr/local/lib/libcblite"
+DEFAULT_LIBRARY_PATH = "/usr/lib/x86_64-linux-gnu/libcblite"
+#DEFAULT_LIBRARY_PATH = "/usr/local/lib/libcblite"
 DEFAULT_LIBRARIES    = "cblite z"
 DEFAULT_LINK_ARGS    = ""
 
@@ -75,11 +76,12 @@ def BuildLibrary(includeDir, python_includedir, lib_path, libraries, extra_link_
 
 
 def CDeclarations(buildEE):
-    f = open("../CBLForPython.h", "rb", buffering=0)
-    result = str(f.readall(), encoding="utf-8")
     if buildEE:
         f = open("../CBLForPython_EE.h", "rb", buffering=0)
-        result += str(f.readall(), encoding="utf-8")
+        result = str(f.readall(), encoding="utf-8")
+    else:
+        f = open("../CBLForPython.h", "rb", buffering=0)
+        result = str(f.readall(), encoding="utf-8")
     return result
 
 
