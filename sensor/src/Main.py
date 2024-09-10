@@ -95,8 +95,9 @@ def main():
     if len(sys.argv) != 4:
         print('One string argument specifying the AppServices endpoint is needed.')
         print('len(sys.argv) = {}'.format(len(sys.argv)))
-        print(sys.argv[0])
-        print(sys.argv[1])
+        print('Values are:')
+        for sys_arg in sys.argv:
+            print(sys_arg)
         return -1
     
 
