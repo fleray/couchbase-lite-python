@@ -93,6 +93,16 @@ class Document (CBLObject):
     @property
     def isMutable(self):
         return False
+    
+    @staticmethod
+    def createDocWithId(id):
+        return lib.CBLDocument_CreateWithID( stringParam(id))
+
+    @staticmethod
+    def setJSON(doc, json):
+        jsonStr = encodeJSON(json)
+        if not lib.CBLDocument_SetJSON(doc, stringParam(jsonStr), gError):
+            raise CBLException("Couldn't store properties", gError)
 
 
 class MutableDocument (Document):
@@ -143,3 +153,4 @@ class MutableDocument (Document):
     @property
     def isMutable(self):
         return True
+    

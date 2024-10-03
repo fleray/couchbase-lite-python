@@ -7,4 +7,4 @@ SCRIPT_DIR=`dirname $0`
 cd "$SCRIPT_DIR"
 
 export PYTHONPATH=..
-python3 src/Main.py
+python3 src/Main.py wss://8se06xixb7lkv54r.apps.cloud.couchbase.com:4984/test-cblite-python demo P@ssw0rd!

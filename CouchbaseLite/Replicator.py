@@ -1,5 +1,6 @@
 from ._PyCBL import ffi, lib
 from .common import *
+import json
 
 #class ReplicatorStatus:
 #    def __init__(self, activity, progress, error)
@@ -12,14 +13,23 @@ class ReplicatorType:
     CBLReplicatorTypePull = lib.kCBLReplicatorTypePull
     
 class ReplicationCollection:
-      def __init__(self, collection, push_filter, pull_filter, conflict_resolver, channels, documentIDs):
-        rep_coll = ffi.new("CBLReplicationCollection*")
-        rep_coll.collection = collection._ref
-        rep_coll.pushFilter = ffi.NULL # TODO: hard-coded value to be changed
-        rep_coll.pullFilter = ffi.NULL # TODO: hard-coded value to be changed
-        rep_coll.conflictResolver = ffi.NULL # TODO: hard-coded value to be changed
-        rep_coll.channels = ffi.NULL # TODO: hard-coded value to be changed
-        rep_coll.documentIDs = ffi.NULL # TODO: hard-coded value to be changed
+    
+    def __init__(self, coll_array):
+        size = len(coll_array)
+
+        self._ref = ffi.new("CBLReplicationCollection["+str(size)+"]")
+        for i in range(size):
+            self._ref[i].collection = coll_array[i]['collection']
+            if 'push_filter' in coll_array[i] and coll_array[i]['push_filter']:
+                self._ref[i].pushFilter = coll_array[i]['push_filter']
+            if 'pull_filter' in coll_array[i] and coll_array[i]['pull_filter']:
+                self._ref[i].pullFilter = coll_array[i]['pull_filter']
+            if 'conflict_resolver' in coll_array[i] and coll_array[i]['conflict_resolver']:
+                self._ref[i].conflict_resolver = coll_array[i].conflict_resolver               
+            if 'channels' in coll_array[i] and coll_array[i]['channels']:
+                self._ref[i].channels = coll_array[i].channels
+            if 'documentIDs' in coll_array[i] and coll_array[i]['documentIDs']:
+                self._ref[i].documentIDs = coll_array[i].documentIDs
 
 class ReplicatorConfiguration:
     def __init__(self, database, url, push_filter, pull_filter, conflict_resolver, username, password, cert_path, collections, collection_count):
@@ -30,7 +40,7 @@ class ReplicatorConfiguration:
 
         self.database = database
         self.endpoint = lib.CBLEndpoint_CreateWithURL(stringParam(url), gError)
-        self.replicator_type = 0
+        self.replicator_type = ReplicatorType.CBLReplicatorTypePushAndPull
         self.continuous = True
         self.disable_auto_purge = True
         self.max_attempts = 0
@@ -47,7 +57,10 @@ class ReplicatorConfiguration:
         self.pull_filter = pull_filter
         self.conflict_resolver = conflict_resolver
         self.context = ffi.NULL
-        self.collections = ffi.NULL # TODO: Required if the database is not set !!!
+        if collections is not None:
+            self.collections = collections # Required if the database is not set !!!
+        else:
+            self.collections = ffi.NULL
         self.collection_count = collection_count
         self.property_encryptor = ffi.NULL
         self.property_decryptor = ffi.NULL
@@ -56,8 +69,15 @@ class ReplicatorConfiguration:
         self.accept_parent_domain_cookies = False
 
     def _cblConfig(self):
+        db = None
+        if self.database is None:
+            db = ffi.NULL
+        else:
+            db = self.database._ref
+
         replicator_config = ffi.new("CBLReplicatorConfiguration*")
-        replicator_config.database = self.database._ref
+        if self.database is not None:  #The databse to replicate with the target's endpoint (Required if the collections is not set).
+            replicator_config.database = self.database._ref
         replicator_config.endpoint = self.endpoint
         replicator_config.replicatorType = self.replicator_type
         replicator_config.continuous = self.continuous
@@ -72,15 +92,23 @@ class ReplicatorConfiguration:
         replicator_config.trustedRootCertificates = self.trusted_root_cert
         replicator_config.channels = self.channels
         replicator_config.documentIDs = self.document_ids
-        #replicator_config.pushFilter = self.push_filter._ref #TODO: to fix
-        #replicator_config.pullFilter = self.pull_filter._ref #TODO: to fix
-        #replicator_config.conflict_resolver = self.conflict_resolver._ref #TODO: to fix
+
+        if self.push_filter is not None:
+            replicator_config.pushFilter = self.push_filter
+
+        if self.pull_filter is not None:
+            replicator_config.pullFilter = self.pull_filter
+
+        if self.conflict_resolver is not None:
+            replicator_config.conflictResolver = self.conflict_resolver
+
         replicator_config.context = self.context
         replicator_config.propertyEncryptor = self.property_encryptor
         replicator_config.propertyDecryptor = self.property_decryptor
         replicator_config.documentPropertyEncryptor = self.document_property_encryptor
         replicator_config.documentPropertyDecryptor = self.document_property_decryptor
-        replicator_config.collections = self.collections
+        if self.collections is not None:
+            replicator_config.collections = self.collections._ref #The collections to replicate with the target's endpoint (Required if the database is not set).
         replicator_config.collectionCount = self.collection_count
         replicator_config.acceptParentDomainCookies = self.accept_parent_domain_cookies
 

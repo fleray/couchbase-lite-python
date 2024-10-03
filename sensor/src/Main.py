@@ -30,7 +30,7 @@ import SensorSimulator
 NUM_PROBES = 4
 
 
-def create_new_database(db_name = 'my-database'):
+def create_new_database(db_name = 'my-database-made-using-python-wrapper'):
     db = Database(db_name, DatabaseConfiguration('.'))
     return db
 
@@ -52,34 +52,68 @@ def add_log(db, log_message):
         db.saveDocument(doc)
 
     
-def add_new_json_sample(db, sensor_id, last_value):
-    prob_properties= SensorSimulator.generate_json_doc(last_value, sensor_id)
-
+def save_doc_inside_collection(db, sensor_id, collection, json_doc):
     tus = int(time.time_ns() / 1000000)
     doc_id = 'sensor::{}::{}'.format(sensor_id, uuid.uuid4())
 
+    doc = Document.createDocWithId(doc_id)
+    Document.setJSON(doc, json_doc)
+
     with db:
-        doc = MutableDocument(doc_id)
-        doc.properties = prob_properties
+        Collection.save_document(collection, doc)
 
-        db.saveDocument(doc)
+def add_new_json_sample(db, sensor_id, last_value):
+    
+    coll_temp = Collection.create_collection(db, "temperatures", "measures")
+    coll_press = Collection.create_collection(db, "pressures", "measures")
 
-def select_count(db):
-    q = N1QLQuery(db, 'SELECT count(*) AS count FROM _')
+    prob_properties= SensorSimulator.generate_json_doc(last_value, sensor_id)
+
+    save_doc_inside_collection(db, sensor_id, coll_temp, prob_properties)
+    save_doc_inside_collection(db, sensor_id, coll_press, prob_properties)
+
+
+def select_count(db, scope_and_collection):
+    q = N1QLQuery(db, 'SELECT count(*) AS count FROM {}'.format(scope_and_collection))
 
     count_result = None
 
     for row in q.execute():
         count_result = row.asDictionary()
-        print(count_result)
+        print('-> {}: {}'.format(scope_and_collection, count_result))
 
 
-def start_replication(db, endpoint_url, username, password):
+def start_replication(db: Database, endpoint_url, username, password):
     
-    collection = Collection(db)
-    replication_collection = ReplicationCollection(collection, None, None, None, None, None)
+#    # get scope names :
+#    scope_names = Collection.get_scope_names(db)
+#    print('SCOPES:')
+#    for x in scope_names:
+#        print(x)
+#
+#    print('COLLECTIONS:')
+#    collection_names = Collection.get_collection_names(db, 'measures')
+#    for x in collection_names:
+#        print(x)
+
+    coll_temp = Collection.create_collection(db, "temperatures", "measures")
+    coll_press = Collection.create_collection(db, "pressures", "measures")
+
+    #replication_collection_temp = ReplicationCollection(coll_temp, None, None, None, None, None)
+    #replication_collection_press = ReplicationCollection(coll_press, None, None, None, None, None)
+
+    #collections = ReplicationCollection.create_replication_collection_list(2)
+    #collections[0] = replication_collection_temp
+    #collections[1] = replication_collection_press
+
+    replica_param_coll_temp =  {'collection': coll_temp,  'push_filter': None, 'pull_filter': None, 'conflict_resolver': None, 'channels': None, 'documentIDs': None}
+    replica_param_coll_press = {'collection': coll_press, 'push_filter': None, 'pull_filter': None, 'conflict_resolver': None, 'channels': None, 'documentIDs': None}
+
+    rep_coll = ReplicationCollection([replica_param_coll_temp, replica_param_coll_press])
     
-    replicator_cfg = ReplicatorConfiguration(db, endpoint_url, None, None, None, username, password, None, replication_collection, 1)
+    # database, url, push_filter, pull_filter, conflict_resolver, username, password, cert_path, collections, collection_count
+    replicator_cfg = ReplicatorConfiguration(None, endpoint_url, None, None, None, username, password, None, rep_coll, 2)
+    replicator_cfg.collection_count = 2
     replicator_cfg.replicator_type = ReplicatorType.CBLReplicatorTypePushAndPull
     replicator_cfg.continuous = True
 
@@ -87,6 +121,7 @@ def start_replication(db, endpoint_url, username, password):
     replicator.start(resetCheckpoint=False)
 
     return replicator
+
 
 
 def main():
@@ -98,17 +133,15 @@ def main():
         print('Values are:')
         for sys_arg in sys.argv:
             print(sys_arg)
-        return -1
-    
+        return -1    
 
     endpoint_url = sys.argv[1]
     username = sys.argv[2]
     password = sys.argv[3]
 
     db = create_new_database() # if needed
-    select_count(db) # list n documents inside local CBlite DB
+
     add_new_json_sample(db, 1, 32) # basic test
-    select_count(db) # list n+1 documents inside local CBlite DB
 
     replicator = start_replication(db, endpoint_url, username, password)
 
@@ -122,8 +155,8 @@ def main():
             add_new_json_sample(db, sensor_id, last_values[x])
 
             time.sleep(2)
-            select_count(db)
-
+            select_count(db, 'measures.temperatures') # list n temperatures documents inside local CBlite DB
+            select_count(db, 'measures.pressures') # list n pressures documents inside local CBlite DB
         #Replic
 
     close_database(db)
