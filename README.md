@@ -4,7 +4,7 @@ September 2024
 
 This is a fork of https://github.com/couchbaselabs/couchbase-lite-python. The main improvment here is the support for scopes/collections which are vailable since CB Lite 3.1+, see https://docs.couchbase.com/couchbase-lite/3.1/c/releasenotes.html#maint-3-1-0.
 
-UPDATE : UPDATE 10/03/2024 : add support for custom scope and collections (measures.temperatures and measures.pressures).
+UPDATE 10/03/2024 : add support for custom scope and collections (measures.temperatures and measures.pressures).
 
 The sensor directory contains a full Python code example:
  - using the CB Lite Python wrapper.
