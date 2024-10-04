@@ -38,6 +38,7 @@ class Collection:
       
         return coll
 
+
     @staticmethod
     def create_collection(database, collection_name, scope_name):
         gError = ffi.new("CBLError*")
@@ -48,23 +49,58 @@ class Collection:
       
         return coll
   
-# TODO: NOT OK
+
+    @staticmethod
+    def FL_array_to_string_array(FL_array):
+        iter = ffi.new("FLArrayIterator*")
+        array = ffi.cast("FLArray", FL_array)
+        lib.FLArrayIterator_Begin(array, iter)
+
+        string_results = []
+
+        while lib.FLArrayIterator_GetValue(iter):
+            value = lib.FLArrayIterator_GetValue(iter)
+            tostr = lib.FLValue_ToString(value)
+            char_array_size = tostr.size + 1
+
+            char_array = ffi.new("char["+ str(char_array_size) +"]")
+            lib.FLSlice_ToCString(lib.FLSliceResult_AsSlice(tostr), char_array, char_array_size)
+            str_result = ffi.string(char_array).decode('utf-8')
+            string_results.append(str_result)
+
+            lib.FLArrayIterator_Next(iter)
+
+        return string_results
+
+
+    @staticmethod
     def get_scope_names(database):
+        """
+        Returns all scope names inside the given database
+        """
         gError = ffi.new("CBLError*")
         mutable_array = lib.CBLDatabase_ScopeNames(database._ref, gError)
         if not mutable_array:
             raise CBLException("Couldn't get scope names", gError)
-        array = lib.FLMutableArray_GetSource(mutable_array)
-        return decodeFleece(array)
-    
-# TODO: NOT OK
+        
+        string_results = Collection.FL_array_to_string_array(mutable_array)
+        
+        return string_results
+
+
+    @staticmethod
     def get_collection_names(database, scope_name) -> List[str]:
+        """
+        Returns all collection names inside the given scope
+        """
         gError = ffi.new("CBLError*")
         mutable_array = lib.CBLDatabase_CollectionNames(database._ref, stringParam(scope_name), gError)
         if not mutable_array:
             raise CBLException("Couldn't get collection names", gError)
-        #array = lib.FLMutableArray_GetSource(mutable_array)
-        return decodeFleeceArray(mutable_array)
+        
+        string_results = Collection.FL_array_to_string_array(mutable_array)
+        
+        return string_results
     
     # Returns an existing scope with the given name.
     def get_scope(database, scope_name):
@@ -72,7 +108,9 @@ class Collection:
         scope = lib.CBLDatabase_Scope(database._ref, stringParam(scope_name), gError)
         if not scope:
             raise CBLException("Couldn't get the scope", gError)
+        
         return scope
+
 
     @staticmethod
     def get_document(collection, doc_id):
@@ -94,6 +132,7 @@ class Collection:
             raise CBLException("Couldn't get mutable document in collection", gError)
       
         return mutable_doc
+
 
     @staticmethod
     def save_document(collection, doc):

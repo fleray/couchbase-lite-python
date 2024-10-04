@@ -34,8 +34,10 @@ def create_new_database(db_name = 'my-database-made-using-python-wrapper'):
     db = Database(db_name, DatabaseConfiguration('.'))
     return db
 
+
 def close_database(db):
     db.close()
+
 
 def add_log(db, log_message):
     tus = time.time()
@@ -51,7 +53,7 @@ def add_log(db, log_message):
 
         db.saveDocument(doc)
 
-    
+
 def save_doc_inside_collection(db, sensor_id, collection, json_doc):
     tus = int(time.time_ns() / 1000000)
     doc_id = 'sensor::{}::{}'.format(sensor_id, uuid.uuid4())
@@ -61,6 +63,7 @@ def save_doc_inside_collection(db, sensor_id, collection, json_doc):
 
     with db:
         Collection.save_document(collection, doc)
+
 
 def add_new_json_sample(db, sensor_id, last_value):
     
@@ -85,26 +88,16 @@ def select_count(db, scope_and_collection):
 
 def start_replication(db: Database, endpoint_url, username, password):
     
-#    # get scope names :
-#    scope_names = Collection.get_scope_names(db)
-#    print('SCOPES:')
-#    for x in scope_names:
-#        print(x)
-#
-#    print('COLLECTIONS:')
-#    collection_names = Collection.get_collection_names(db, 'measures')
-#    for x in collection_names:
-#        print(x)
+    # get scope names :
+    scope_names = Collection.get_scope_names(db)
+    print('LIST SCOPES and associated COLLECTIONS')
+    for x in scope_names:
+        collection_names = Collection.get_collection_names(db, 'measures')
+        for y in collection_names:
+            print('Inside scope {} -> collection {}'.format(x,y))
 
     coll_temp = Collection.create_collection(db, "temperatures", "measures")
     coll_press = Collection.create_collection(db, "pressures", "measures")
-
-    #replication_collection_temp = ReplicationCollection(coll_temp, None, None, None, None, None)
-    #replication_collection_press = ReplicationCollection(coll_press, None, None, None, None, None)
-
-    #collections = ReplicationCollection.create_replication_collection_list(2)
-    #collections[0] = replication_collection_temp
-    #collections[1] = replication_collection_press
 
     replica_param_coll_temp =  {'collection': coll_temp,  'push_filter': None, 'pull_filter': None, 'conflict_resolver': None, 'channels': None, 'documentIDs': None}
     replica_param_coll_press = {'collection': coll_press, 'push_filter': None, 'pull_filter': None, 'conflict_resolver': None, 'channels': None, 'documentIDs': None}
@@ -121,7 +114,6 @@ def start_replication(db: Database, endpoint_url, username, password):
     replicator.start(resetCheckpoint=False)
 
     return replicator
-
 
 
 def main():
@@ -160,6 +152,7 @@ def main():
         #Replic
 
     close_database(db)
+
 
 if __name__ == "__main__":
     main()
