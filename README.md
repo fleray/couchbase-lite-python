@@ -35,7 +35,7 @@ greeting = props["greeting"]
 Here is how to launch the sensor Pythoin code snippet :
 
 ```bash
-./build.sh -–edition EE
+./build.sh --edition EE
  
 cd sensor
  
