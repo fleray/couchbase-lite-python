@@ -88,13 +88,13 @@ def select_count(db, scope_and_collection):
 
 def start_replication(db: Database, endpoint_url, username, password):
     
-    # get scope names :
+    # get scopes/collections names :
     scope_names = Collection.get_scope_names(db)
     print('LIST SCOPES and associated COLLECTIONS')
-    for x in scope_names:
-        collection_names = Collection.get_collection_names(db, 'measures')
-        for y in collection_names:
-            print('Inside scope {} -> collection {}'.format(x,y))
+    for scope in scope_names:
+        collection_names = Collection.get_collection_names(db, scope)
+        for coll in collection_names:
+            print('Inside scope {} -> collection {}'.format(scope, coll))
 
     coll_temp = Collection.create_collection(db, "temperatures", "measures")
     coll_press = Collection.create_collection(db, "pressures", "measures")
