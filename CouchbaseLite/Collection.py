@@ -30,6 +30,9 @@ class Collection:
     """
     @staticmethod
     def get_default_collection(database):
+        """
+        Returns the default collection of the default scope
+        """
         gError = ffi.new("CBLError*")
         coll = lib.CBLDatabase_DefaultCollection(database._ref, gError)
 
@@ -40,7 +43,24 @@ class Collection:
 
 
     @staticmethod
+    def get_collection(database, collection_name, scope_name):
+        """
+        Returns the collection named 'collection_name' inside scope 'scope_name' in the given database
+        """
+        gError = ffi.new("CBLError*")
+        coll = lib.CBLDatabase_Collection(database._ref, stringParam(collection_name), stringParam(scope_name), gError)
+
+        if not coll:
+            raise CBLException("Couldn't return collection {}".format(stringParam(collection_name)), gError)
+      
+        return coll
+
+
+    @staticmethod
     def create_collection(database, collection_name, scope_name):
+        """
+        Create a new collection named 'collection_name' inside scope 'scope_name' in the given database
+        """
         gError = ffi.new("CBLError*")
         coll = lib.CBLDatabase_CreateCollection(database._ref, stringParam(collection_name), stringParam(scope_name), gError)
 
@@ -51,7 +71,24 @@ class Collection:
   
 
     @staticmethod
+    def delete_collection(database, collection_name, scope_name):
+        """
+        Delete an existing collection named 'collection_name' inside scope 'scope_name' in the given database
+        """
+        gError = ffi.new("CBLError*")
+        is_deleted = lib.CBLDatabase_DeleteCollection(database._ref, stringParam(collection_name), stringParam(scope_name), gError)
+
+        if not is_deleted:
+            raise CBLException("Couldn't delete collection with the provided collection and scope names", gError)
+      
+        return is_deleted
+  
+
+    @staticmethod
     def FL_array_to_string_array(FL_array):
+        """
+        Internal utility method
+        """
         iter = ffi.new("FLArrayIterator*")
         array = ffi.cast("FLArray", FL_array)
         lib.FLArrayIterator_Begin(array, iter)
@@ -102,8 +139,25 @@ class Collection:
         
         return string_results
     
-    # Returns an existing scope with the given name.
+
+    @staticmethod
+    def get_default_scope(database):
+        """
+        Returns the default scope
+        """
+        gError = ffi.new("CBLError*")
+        scope = lib.CBLDatabase_DefaultScope(database._ref, gError)
+
+        if not scope:
+            raise CBLException("Couldn't return default scope", gError)
+      
+        return scope
+
+
     def get_scope(database, scope_name):
+        """
+        Returns an existing scope with the given name.
+        """
         gError = ffi.new("CBLError*")
         scope = lib.CBLDatabase_Scope(database._ref, stringParam(scope_name), gError)
         if not scope:
@@ -114,6 +168,9 @@ class Collection:
 
     @staticmethod
     def get_document(collection, doc_id):
+        """
+        Returns document with doc key 'docid' from given colllection
+        """
         gError = ffi.new("CBLError*")
         mutable_doc = lib.CBLCollection_GetDocument(collection,stringParam(doc_id), gError)
 
@@ -125,6 +182,9 @@ class Collection:
 
     @staticmethod
     def get_mutable_document(collection, doc_id):
+        """
+        Returns a mutable document with doc key 'docid' from given colllection
+        """
         gError = ffi.new("CBLError*")
         mutable_doc = lib.CBLCollection_GetMutableDocument(collection,stringParam(doc_id), gError)
 
@@ -136,6 +196,9 @@ class Collection:
 
     @staticmethod
     def save_document(collection, doc):
+        """
+        Save a (mutable) document 'doc' inside the given 'colllection'
+        """
         gError = ffi.new("CBLError*")
         save_doc = lib.CBLCollection_SaveDocument(collection, doc, gError)
 
@@ -144,3 +207,73 @@ class Collection:
       
         return save_doc
         
+    @staticmethod
+    def delete_document(collection, doc):
+        """
+        Delete the given document 'doc' inside the given 'colllection'
+        """
+        gError = ffi.new("CBLError*")
+        is_deleted = lib.CBLCollection_DeleteDocument(collection, doc, gError)
+
+        if not is_deleted:
+            raise CBLException("Couldn't delete document in collection", gError)
+      
+        return is_deleted
+    
+
+    @staticmethod
+    def purge_document(collection, doc):
+        """
+        Purge the given document 'doc' inside the given 'colllection'
+        """
+        gError = ffi.new("CBLError*")
+        is_purged = lib.CBLCollection_PurgeDocument(collection, doc, gError)
+
+        if not is_purged:
+            raise CBLException("Couldn't purge document in collection", gError)
+      
+        return is_purged
+    
+
+    @staticmethod
+    def purge_document_by_id(collection, doc_id):
+        """
+        Purge the given document with doc key "doc_id' inside the given 'colllection'
+        """
+        gError = ffi.new("CBLError*")
+        is_purged = lib.CBLCollection_PurgeDocumentByID(collection, stringParam(doc_id), gError)
+
+        if not is_purged:
+            raise CBLException("Couldn't purge document by doc_id {} in collection".format(stringParam(doc_id)), gError)
+      
+        return is_purged
+    
+
+    @staticmethod
+    def get_document_epxiration(collection, doc_id):
+        """
+        Returns the time, if any, at which a given document will expire and be purged.
+        """
+        gError = ffi.new("CBLError*")
+        time_stamp = lib.CBLCollection_GetDocumentExpiration(collection, doc_id, gError)
+
+        if not time_stamp:
+            raise CBLException("Couldn't get the TTL for the document with doc_id {} in the given collection"
+                               .format(stringParam(doc_id)), gError)
+      
+        return time_stamp
+    
+
+    @staticmethod
+    def set_document_epxiration(collection, doc_id, expiration_ts):
+        """
+        Sets or clears the expiration time of a document. 
+        """
+        gError = ffi.new("CBLError*")
+        is_TTL_set = lib.CBLCollection_SetDocumentExpiration(collection, doc_id, expiration_ts, gError)
+
+        if not is_TTL_set:
+            raise CBLException("Couldn't set the TTL {} for the document with doc_id {} in the given collection"
+                               .format(stringParam(expiration_ts), stringParam(doc_id)), gError)
+      
+        return is_TTL_set

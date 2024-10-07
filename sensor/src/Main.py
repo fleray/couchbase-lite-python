@@ -64,11 +64,15 @@ def save_doc_inside_collection(db, sensor_id, collection, json_doc):
     with db:
         Collection.save_document(collection, doc)
 
+        # Code below are just to test document deletion and purge are working:
+        #Collection.delete_document(collection, doc)
+        #Collection.purge_document(collection, doc)
+
 
 def add_new_json_sample(db, sensor_id, last_value):
     
-    coll_temp = Collection.create_collection(db, "temperatures", "measures")
-    coll_press = Collection.create_collection(db, "pressures", "measures")
+    coll_temp = Collection.get_collection(db, "temperatures", "measures")
+    coll_press = Collection.get_collection(db, "pressures", "measures")
 
     prob_properties= SensorSimulator.generate_json_doc(last_value, sensor_id)
 
@@ -88,6 +92,29 @@ def select_count(db, scope_and_collection):
 
 def start_replication(db: Database, endpoint_url, username, password):
     
+    # get default scope
+    default_scope = Collection.get_default_scope(db)
+    print('Default scope {}'.format(default_scope))
+
+    # get default collection
+    default_coll = Collection.get_default_collection(db)
+    print('Default collection {}'.format(default_coll))
+
+    coll_temp = Collection.create_collection(db, "temperatures", "measures")
+    coll_press = Collection.create_collection(db, "pressures", "measures")
+    dummy_collection = Collection.create_collection(db, "dummy", "measures")
+
+    # get scopes/collections names before 'dummy' collection deletion
+    scope_names = Collection.get_scope_names(db)
+    print('LIST SCOPES and associated COLLECTIONS')
+    for scope in scope_names:
+        collection_names = Collection.get_collection_names(db, scope)
+        for coll in collection_names:
+            print('Inside scope {} -> collection {}'.format(scope, coll))
+
+    if Collection.delete_collection(db, "dummy", "measures"):
+        print('Dummy collection has been successfully deleted')
+
     # get scopes/collections names :
     scope_names = Collection.get_scope_names(db)
     print('LIST SCOPES and associated COLLECTIONS')
@@ -96,8 +123,9 @@ def start_replication(db: Database, endpoint_url, username, password):
         for coll in collection_names:
             print('Inside scope {} -> collection {}'.format(scope, coll))
 
-    coll_temp = Collection.create_collection(db, "temperatures", "measures")
-    coll_press = Collection.create_collection(db, "pressures", "measures")
+    # get collection named 'temperatures' in scope measures
+    coll_temp2 = Collection.get_collection(db, "temperatures", "measures")
+    assert coll_temp == coll_temp2
 
     replica_param_coll_temp =  {'collection': coll_temp,  'push_filter': None, 'pull_filter': None, 'conflict_resolver': None, 'channels': None, 'documentIDs': None}
     replica_param_coll_press = {'collection': coll_press, 'push_filter': None, 'pull_filter': None, 'conflict_resolver': None, 'channels': None, 'documentIDs': None}
@@ -132,8 +160,6 @@ def main():
     password = sys.argv[3]
 
     db = create_new_database() # if needed
-
-    add_new_json_sample(db, 1, 32) # basic test
 
     replicator = start_replication(db, endpoint_url, username, password)
 
