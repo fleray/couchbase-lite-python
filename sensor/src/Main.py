@@ -68,6 +68,16 @@ def save_doc_inside_collection(db, sensor_id, collection, json_doc):
         #Collection.delete_document(collection, doc)
         #Collection.purge_document(collection, doc)
 
+    return doc_id
+
+def modify_existing_doc(collection, doc_id):
+    my_existing_doc = Collection.get_mutable_document(collection, doc_id)
+
+    prob_properties= {'foo': 'bar'}
+    Document.setJSON(my_existing_doc, prob_properties)
+
+    Collection.save_document(collection, my_existing_doc)
+
 
 def add_new_json_sample(db, sensor_id, last_value):
     
@@ -104,6 +114,10 @@ def start_replication(db: Database, endpoint_url, username, password):
     coll_press = Collection.create_collection(db, "pressures", "measures")
     dummy_collection = Collection.create_collection(db, "dummy", "measures")
 
+    prob_properties = SensorSimulator.generate_json_doc(- sys.float_info.max, 0)
+    doc_id = save_doc_inside_collection(db, 0, dummy_collection, prob_properties)
+    modify_existing_doc(dummy_collection, doc_id)
+
     # get scopes/collections names before 'dummy' collection deletion
     scope_names = Collection.get_scope_names(db)
     print('LIST SCOPES and associated COLLECTIONS')
@@ -112,8 +126,8 @@ def start_replication(db: Database, endpoint_url, username, password):
         for coll in collection_names:
             print('Inside scope {} -> collection {}'.format(scope, coll))
 
-    if Collection.delete_collection(db, "dummy", "measures"):
-        print('Dummy collection has been successfully deleted')
+#    if Collection.delete_collection(db, "dummy", "measures"):
+#        print('Dummy collection has been successfully deleted')
 
     # get scopes/collections names :
     scope_names = Collection.get_scope_names(db)
